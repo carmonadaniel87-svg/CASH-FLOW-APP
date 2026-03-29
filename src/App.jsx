@@ -80,7 +80,7 @@ export default function App() {
   const [bF,   setBF]   = useState({name:"",emoji:"🎯",color:"#39FF14",pct:"",goal:""});
   const [wF,   setWF]   = useState({name:"",emoji:"💵",color:"#39FF14",currency:"COP",isGlobal:false});
   const [trF,  setTrF]  = useState({trType:"budget",from:"",to:"",amount:"",currency:"COP"});
-window.storage.get("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
+localStorage.getItem(("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
 localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRef();
 
   // ── Active account ──────────────────────────────────────────────────────────
@@ -94,12 +94,12 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
   useEffect(()=>{ async function load(){
     try{
       // Try current key first
-      let r=await window.storage.get("finanzas_v7");
-      if(r){ setAppData(JSON.parse(r.value)); setLoaded(true); return; }
+      let r=await localStorage.getItem(("finanzas_v7");
+      if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; }
       // Fallback: try v6
-      r=await window.storage.get("finanzas_v6");
+      r=await localStorage.getItem(("finanzas_v6");
       if(r){
-        const old=JSON.parse(r.value);
+        const old=JSON.parse(r);
         // Migrate v6 (single account) to v7 (multi-account)
         if(old.transactions||old.budgets||old.wallets){
           const migratedAcc={
@@ -113,9 +113,9 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
         }
       }
       // Fallback: try v5
-      r=await window.storage.get("finanzas_v5");
+      r=await localStorage.getItem(("finanzas_v5");
       if(r){
-        const old=JSON.parse(r.value);
+        const old=JSON.parse(r);
         if(old.personal){
           const migratedAcc={
             ...DEFAULT_ACCOUNT(),
@@ -130,7 +130,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
     }catch(_){}
     setLoaded(true);
   } load(); },[]);
-  useEffect(()=>{ if(!loaded)return; window.storage.set("finanzas_v7",JSON.stringify(appData)); },[appData,loaded]);
+  useEffect(()=>{ if(!loaded)return; localStorage.setItem("finanzas_v7",JSON.stringify(appData)); },[appData,loaded]);
   useEffect(()=>{ if(modal?.type==="tx"&&amtRef.current) setTimeout(()=>amtRef.current?.focus(),130); },[modal]);
 
   // ── Updaters ────────────────────────────────────────────────────────────────
