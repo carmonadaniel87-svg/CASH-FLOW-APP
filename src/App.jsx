@@ -7,7 +7,7 @@ const CATS = {
   gasto:   ["🏠 Vivienda","🍔 Comida","🚗 Transporte","💊 Salud","🎉 Ocio","👗 Ropa","📚 Educación","💡 Servicios","📱 Tecnología","💸 Otro"],
 };
 const B_COLORS  = ["#39FF14","#1565C0","#AD1457","#E65100","#6A1B9A","#00838F","#558B2F","#37474F","#F9A825","#0277BD"];
-const C_COLORS  = ["#39FF14","#1565C0","#AD1457","#E65100","#6A1B9A","#00838F","#558B2F","#FF4444","#F9A825","#0277BD","#37474F","#00695C"];
+const C_COLORS  = ["#39FF14","#1565C0","#AD1457","#E65100","#6A1B9A","#008h38F","#558B2F","#FF4444","#F9A825","#0277BD","#37474F","#00695C"];
 const EMOJIS    = ["💛","🏠","🚗","🌱","✈️","🎓","💡","🏦","🌐","💼","📦","🏢","📢","🔧","💰","🎯","🎵","🐶","🏋️","🍕","🎮","🌸","⭐","🔥","💎"];
 const W_EMOJIS  = ["💵","🏦","💳","🪙","💴","🏧","📱","🤑","🏠","💰","💎","🏪"];
 const ACC_EMOJIS= ["💛","🏠","🚗","🌱","✈️","🎓","💡","💼","🏪","🎯","⭐","🔥","💎","🌸","🎵"];
@@ -80,12 +80,8 @@ export default function App() {
   const [bF,   setBF]   = useState({name:"",emoji:"🎯",color:"#39FF14",pct:"",goal:""});
   const [wF,   setWF]   = useState({name:"",emoji:"💵",color:"#39FF14",currency:"COP",isGlobal:false});
   const [trF,  setTrF]  = useState({trType:"budget",from:"",to:"",amount:"",currency:"COP"});
-  const [accF, setAccF] = useState({name:"",emoji:"💛",color:"#FF7043"});
-  const [bdDR, setBdDR] = useState({preset:"all"});
-  const [editingB, setEditingB] = useState(null);
-  const [editingW, setEditingW] = useState(null);
-  const [editingAcc,setEditingAcc]=useState(null);
-  const evidRef=useRef(); const amtRef=useRef();
+window.storage.get("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
+localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRef();
 
   // ── Active account ──────────────────────────────────────────────────────────
   const activeId  = appData.activeAccountId || appData.accounts[0]?.id;
