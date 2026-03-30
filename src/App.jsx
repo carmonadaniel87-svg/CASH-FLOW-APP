@@ -91,13 +91,13 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
   const allWls    = account?.wallets      || []; // all wallets for this account
 
   // ── Persist ─────────────────────────────────────────────────────────────────
-  useEffect(()=>{ async function load(){
+  useEffect(()=>{ function load(){
     try{
       // Try current key first
-      let r=await localStorage.getItem(("finanzas_v7");
+      const r=localStorage.getItem(("finanzas_v7");
       if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; }
       // Fallback: try v6
-      r=await localStorage.getItem(("finanzas_v6");
+      r=localStorage.getItem(("finanzas_v6");
       if(r){
         const old=JSON.parse(r);
         // Migrate v6 (single account) to v7 (multi-account)
@@ -113,7 +113,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
         }
       }
       // Fallback: try v5
-      r=await localStorage.getItem(("finanzas_v5");
+      r=localStorage.getItem(("finanzas_v5");
       if(r){
         const old=JSON.parse(r);
         if(old.personal){
@@ -326,7 +326,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
   };
 
   // ── Chart helpers ─────────────────────────────────────────────────────────────
-  const catData = type => { const m={}; filtered.filter(t=>t.type===type).forEach(t=>{ m[t.category]=(m[t.category]||0)+t.amount; }); return Object.entries(m).map(([k,v],i)=>({name:k.split(" ").slice(1).join(" "),full:k,value:v,color:C_COLORS[i%C_COLORS.length]})).sort((a,b)=>b.value-a.value); };
+  const catData = type => { const m={}; filtered.filter(t=>t.type===type).forEach(t=>{ m[t.category]=(m[t.category]||0)+t.amount; }); return Object.entries(m).map(([k,v],i)=>({name:k.split(" ").slice(1).join(" "),full:k,value:v,color:C_COLORS[i%C_COLORS.length]})).sort((a,b)=>b.value-a); };
   const monthlyData = () => { const m={}; txs.filter(t=>["ingreso","gasto","transfer","wtransfer"].includes(t.type)).forEach(t=>{ const k=fMon(t.datetime); if(!m[k]) m[k]={month:k,ingresos:0,gastos:0,transferencias:0}; if(t.type==="ingreso") m[k].ingresos+=t.amount; else if(t.type==="gasto") m[k].gastos+=t.amount; else m[k].transferencias+=t.amount; }); return Object.values(m).slice(-6); };
   const budgetChartData = () => bgs.map(b=>({name:b.name,acumulado:getAllocated(sid(b.id),bounds),gastado:getSpent(sid(b.id),bounds),color:b.color}));
   const listTxs = filtered.filter(t=>{ if(txFilter===1&&t.type!=="ingreso") return false; if(txFilter===2&&t.type!=="gasto"&&t.type!=="transfer"&&t.type!=="wtransfer") return false; if(search){ const q=search.toLowerCase(); return (t.category||"").toLowerCase().includes(q)||(t.desc||"").toLowerCase().includes(q); } return true; });
@@ -591,7 +591,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
     if(!active||!payload?.length) return null;
     return <div style={{background:"#111",border:"1px solid #1A1A1A",borderRadius:10,padding:"8px 12px",fontSize:12,fontWeight:700,color:"#F0F0F0"}}>
       {label&&<p style={{margin:"0 0 4px",color:"#333"}}>{label}</p>}
-      {payload.map((p,i)=><p key={i} style={{margin:"2px 0",color:p.color||p.fill}}>{p.name}: {fCOP(p.value)}</p>)}
+      {payload.map((p,i)=><p key={i} style={{margin:"2px 0",color:p.color||p.fill}}>{p.name}: {fCOP(p)}</p>)}
     </div>;
   };
 
@@ -824,7 +824,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
 
         {/* MOVIMIENTOS */}
         {tab===0&&<div style={g.sec}>
-          <div style={g.srchWrap}><span style={g.srchIcon}>🔍</span><input style={g.srchInp} placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+          <div style={g.srchWrap}><span style={g.srchIcon}>🔍</span><input style={g.srchInp} placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target)}/></div>
           <div style={g.fRow}>{["Todos","💰 Ingresos","💸 Egresos"].map((f,i)=><button key={i} style={g.fBtn(txFilter===i)} onClick={()=>setTxFilter(i)}>{f}</button>)}</div>
           {listTxs.length===0?<div style={g.empty}><div style={{fontSize:40,marginBottom:8}}>🫙</div><p style={{fontWeight:700,fontSize:14,color:pal.text}}>Sin movimientos{search?" para esa búsqueda":""}</p></div>
           :<div style={g.txList}>{listTxs.map(t=><TxRow key={t.id} t={t} onDel={delTx}/>)}</div>}
@@ -892,7 +892,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
             {["📥 Ingresos","📤 Gastos","🎯 Presupuestos","📈 Tendencia","💳 Billeteras","↔️ Transferencias"].map((t,i)=><button key={i} style={g.chTab(chTab===i)} onClick={()=>setChTab(i)}>{t}</button>)}
           </div>
           <div style={g.sec}>
-            {[0,1].includes(chTab)&&(()=>{ const d=catData(chTab===0?"ingreso":"gasto"); return <div style={g.chCard}><p style={g.chTitle}>{chTab===0?"Ingresos":"Gastos"} por categoría <span style={{fontSize:10,opacity:.5,fontWeight:600}}>· {periodLabel()}</span></p>{d.length===0?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin datos</p>:<><ResponsiveContainer width="100%" height={180}><PieChart><Pie data={d} dataKey="value" cx="50%" cy="50%" outerRadius={75} innerRadius={38}>{d.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fCOP(v)} contentStyle={{borderRadius:10,fontFamily:"Nunito"}}/></PieChart></ResponsiveContainer><div style={{marginTop:8}}>{d.map((e,i)=><div key={i} style={g.legRow}><div style={g.legDot(e.color)}/><span style={g.legName}>{e.full}</span><span style={g.legVal}>{fCOP(e.value)}</span></div>)}</div></>}</div>; })()}
+            {[0,1].includes(chTab)&&(()=>{ const d=catData(chTab===0?"ingreso":"gasto"); return <div style={g.chCard}><p style={g.chTitle}>{chTab===0?"Ingresos":"Gastos"} por categoría <span style={{fontSize:10,opacity:.5,fontWeight:600}}>· {periodLabel()}</span></p>{d.length===0?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin datos</p>:<><ResponsiveContainer width="100%" height={180}><PieChart><Pie data={d} dataKey="value" cx="50%" cy="50%" outerRadius={75} innerRadius={38}>{d.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fCOP(v)} contentStyle={{borderRadius:10,fontFamily:"Nunito"}}/></PieChart></ResponsiveContainer><div style={{marginTop:8}}>{d.map((e,i)=><div key={i} style={g.legRow}><div style={g.legDot(e.color)}/><span style={g.legName}>{e.full}</span><span style={g.legVal}>{fCOP(e)}</span></div>)}</div></>}</div>; })()}
             {chTab===2&&(()=>{ const d=budgetChartData(); return <div style={g.chCard}><p style={g.chTitle}>Presupuestos · {periodLabel()}</p>{d.length===0?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin presupuestos</p>:<><ResponsiveContainer width="100%" height={d.length*50+30}><BarChart data={d} layout="vertical" margin={{left:4,right:16,top:4,bottom:4}}><XAxis type="number" hide/><YAxis type="category" dataKey="name" width={75} tick={{fontSize:11,fontFamily:"Nunito",fontWeight:700,fill:"#888"}}/><Tooltip content={<CTip/>}/><Bar dataKey="acumulado" name="Acumulado" radius={[0,6,6,0]}>{d.map((e,i)=><Cell key={i} fill={e.color+"44"}/>)}</Bar><Bar dataKey="gastado" name="Gastado" radius={[0,6,6,0]}>{d.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar></BarChart></ResponsiveContainer><div style={{marginTop:10}}>{d.map((b,i)=>{ const rem=b.acumulado-b.gastado; return <div key={i} style={{...g.legRow,marginBottom:5}}><div style={g.legDot(b.color)}/><span style={g.legName}>{b.name}</span><span style={{fontSize:11,fontWeight:700,color:rem>=0?pal.accent:pal.red}}>{rem>=0?`✅ ${fCOP(rem)}`:`⚠️ ${fCOP(-rem)}`}</span></div>; })}</div></>}</div>; })()}
             {chTab===3&&(()=>{ const d=monthlyData(); return <div style={g.chCard}><p style={g.chTitle}>Tendencia mensual</p>{d.length===0?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin datos</p>:<ResponsiveContainer width="100%" height={220}><LineChart data={d} margin={{left:0,right:10,top:4,bottom:4}}><CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A"/><XAxis dataKey="month" tick={{fontSize:11,fontFamily:"Nunito",fontWeight:700,fill:"#888"}}/><YAxis hide/><Tooltip content={<CTip/>}/><Legend wrapperStyle={{fontSize:12,fontFamily:"Nunito",fontWeight:700,color:"#888"}}/><Line type="monotone" dataKey="ingresos" name="Ingresos" stroke="#39FF14" strokeWidth={3} dot={{r:4,fill:"#39FF14"}}/><Line type="monotone" dataKey="gastos" name="Gastos" stroke="#FF4444" strokeWidth={3} dot={{r:4,fill:"#FF4444"}}/><Line type="monotone" dataKey="transferencias" name="Transferencias" stroke="#1565C0" strokeWidth={2} strokeDasharray="5 5" dot={{r:3,fill:"#1565C0"}}/></LineChart></ResponsiveContainer>}</div>; })()}
             {chTab===4&&(()=>{ const d=allWls.map(w=>({name:`${w.emoji} ${w.name}`,value:Math.max(getWalletBal(w.id),0),color:w.color,currency:w.currency})); return <div style={g.chCard}><p style={g.chTitle}>Saldo por billetera</p>{d.every(x=>x.value===0)?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin saldo</p>:<><ResponsiveContainer width="100%" height={180}><PieChart><Pie data={d} dataKey="value" cx="50%" cy="50%" outerRadius={75} innerRadius={38}>{d.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fCOP(v)} contentStyle={{borderRadius:10,fontFamily:"Nunito"}}/></PieChart></ResponsiveContainer><div style={{marginTop:8}}>{d.map((e,i)=><div key={i} style={g.legRow}><div style={g.legDot(e.color)}/><span style={g.legName}>{e.name}</span><span style={g.legVal}>{fAmt(getWalletBal(allWls[i]?.id),allWls[i]?.currency)}</span></div>)}</div></>}</div>; })()}
