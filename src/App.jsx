@@ -80,8 +80,12 @@ export default function App() {
   const [bF,   setBF]   = useState({name:"",emoji:"🎯",color:"#39FF14",pct:"",goal:""});
   const [wF,   setWF]   = useState({name:"",emoji:"💵",color:"#39FF14",currency:"COP",isGlobal:false});
   const [trF,  setTrF]  = useState({trType:"budget",from:"",to:"",amount:"",currency:"COP"});
-localStorage.getItem("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
-localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRef();
+const [accF, setAccF] = useState({name:"",emoji:"💛",color:"#FF7043"});
+  const [bdDR, setBdDR] = useState({preset:"all"});
+  const [editingB, setEditingB] = useState(null);
+  const [editingW, setEditingW] = useState(null);
+const [editingAcc,setEditingAcc]=useState(null);
+  const evidRef=useRef(); const amtRef=useRef();
 
   // ── Active account ──────────────────────────────────────────────────────────
   const activeId  = appData.activeAccountId || appData.accounts[0]?.id;
