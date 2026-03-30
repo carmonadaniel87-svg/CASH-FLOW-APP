@@ -80,7 +80,7 @@ export default function App() {
   const [bF,   setBF]   = useState({name:"",emoji:"🎯",color:"#39FF14",pct:"",goal:""});
   const [wF,   setWF]   = useState({name:"",emoji:"💵",color:"#39FF14",currency:"COP",isGlobal:false});
   const [trF,  setTrF]  = useState({trType:"budget",from:"",to:"",amount:"",currency:"COP"});
-localStorage.getItem(("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
+localStorage.getItem("finanzas_v6");localStorage.setItem("finanzas_v7",  const [editingW, setEditingW] = useState(null);
 localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRef();
 
   // ── Active account ──────────────────────────────────────────────────────────
@@ -94,10 +94,10 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
   useEffect(()=>{ function load(){
     try{
       // Try current key first
-      const r=localStorage.getItem(("finanzas_v7");
+      const r=localStorage.getItem("finanzas_v7");
       if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; }
       // Fallback: try v6
-      r=localStorage.getItem(("finanzas_v6");
+      r=localStorage.getItem("finanzas_v6");
       if(r){
         const old=JSON.parse(r);
         // Migrate v6 (single account) to v7 (multi-account)
@@ -113,7 +113,7 @@ localStorage.getItem("finanzas_v6");  const evidRef=useRef(); const amtRef=useRe
         }
       }
       // Fallback: try v5
-      r=localStorage.getItem(("finanzas_v5");
+      r=localStorage.getItem("finanzas_v5");
       if(r){
         const old=JSON.parse(r);
         if(old.personal){
