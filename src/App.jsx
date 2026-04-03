@@ -877,6 +877,13 @@ const [editingAcc,setEditingAcc]=useState(null);
             </svg>
             <span style={g.tabLbl(tab===2)}>Gráficas</span>
           </button>
+          <button style={g.tab(tab===3)} onClick={()=>setTab(3)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" stroke={tab===3?"#000":pal.textDim} strokeWidth="2"/>
+              <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke={tab===3?"#000":pal.textDim} strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span style={g.tabLbl(tab===3)}>{tr('config')}</span>
+          </button>
         </div>
 
         {/* MOVIMIENTOS */}
