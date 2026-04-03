@@ -623,6 +623,7 @@ const [editingAcc,setEditingAcc]=useState(null);
       const token=d.access_token, userId=d.user?.id;
       if(!token){setAuthError('No se pudo obtener sesión');setAuthLoading(false);return;}
       window._supaToken=token; window._supaUserId=userId;
+      localStorage.setItem("cf_session", JSON.stringify({token,userId,email:authEmail}));
       setUser({token,userId,email:authEmail});
       // Guardar sesión para persistencia
       try{ localStorage.setItem("cf_session", JSON.stringify({token,userId,email:authEmail})); }catch(_){}
@@ -635,6 +636,7 @@ const [editingAcc,setEditingAcc]=useState(null);
   async function handleLogout(){
     if(user?.token)await supaSignOut(user.token);
     window._supaToken=null;window._supaUserId=null;
+    localStorage.removeItem("cf_session");
     setUser(null);setAuthEmail('');setAuthPass('');
     try{ localStorage.removeItem("cf_session"); }catch(_){}
   }
