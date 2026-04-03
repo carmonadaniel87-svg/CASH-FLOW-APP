@@ -1,29 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from "recharts";
 
-// ─── SUPABASE ────────────────────────────────────────────────────────────────
+// ─── SUPABASE AUTH + DATA ────────────────────────────────────────────────────
 const SUPA_URL = "https://gyypefzjnrgtkgprfglr.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5eXBlZnpqbnJndGtncHJmZ2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ5NTcsImV4cCI6MjA5MDc1MDk1N30.U65ZwdEdH6a1JOX7Iib9OskXB3mYqnyzqJQjnuX2RAw";
-async function supaLoad() {
-  try {
-    const r = await fetch(SUPA_URL+'/rest/v1/app_data?id=eq.singleton&select=data', {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY }
-    });
-    const rows = await r.json();
-    if(rows?.[0]?.data && rows[0].data.accounts) return rows[0].data;
-  } catch(_) {}
-  return null;
-}
-async function supaSave(data) {
-  try {
-    await fetch(SUPA_URL+'/rest/v1/app_data?id=eq.singleton', {
-      method: 'PATCH',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
-    });
-  } catch(_) {}
-}
-
+async function supaSignUp(email,password){const r=await fetch(SUPA_URL+'/auth/v1/signup',{method:'POST',headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password})});return r.json();}
+async function supaSignIn(email,password){const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password})});return r.json();}
+async function supaSignOut(token){try{await fetch(SUPA_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}});}catch(_){}}
+async function supaLoad(token,userId){try{const r=await fetch(SUPA_URL+'/rest/v1/app_data?user_id=eq.'+userId+'&select=data',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}});const rows=await r.json();if(rows?.[0]?.data?.accounts)return rows[0].data;}catch(_){}return null;}
+async function supaSave(token,userId,data){try{await fetch(SUPA_URL+'/rest/v1/app_data',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({user_id:userId,data,updated_at:new Date().toISOString()})});}catch(_){}}
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const CATS = {
@@ -85,6 +70,12 @@ export default function App() {
     activeAccountId: null,
   });
   const [loaded,      setLoaded]      = useState(false);
+  const [user,        setUser]        = useState(null);
+  const [authTab,     setAuthTab]     = useState('login');
+  const [authEmail,   setAuthEmail]   = useState('');
+  const [authPass,    setAuthPass]    = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError,   setAuthError]   = useState('');
 
   const [mainTab,     setMainTab]     = useState(0); // 0=dashboard 1=cuenta activa
   const [tab,         setTab]         = useState(0); // sub-tabs dentro de cuenta
@@ -621,7 +612,55 @@ const [editingAcc,setEditingAcc]=useState(null);
     </>;
   }
 
+
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  async function handleLogin() {
+    if(!authEmail||!authPass){setAuthError('Completa email y contraseña');return;}
+    setAuthLoading(true);setAuthError('');
+    try {
+      const d = authTab==='register' ? await supaSignUp(authEmail,authPass) : await supaSignIn(authEmail,authPass);
+      if(d.error||d.msg){setAuthError(d.error?.message||d.msg||'Error');setAuthLoading(false);return;}
+      const token=d.access_token, userId=d.user?.id;
+      if(!token){setAuthError('No se pudo obtener sesión');setAuthLoading(false);return;}
+      window._supaToken=token; window._supaUserId=userId;
+      setUser({token,userId,email:authEmail});
+      const cloud=await supaLoad(token,userId);
+      if(cloud&&cloud.accounts){setAppData(cloud);}
+      else{try{const r=localStorage.getItem("finanzas_v7");if(r){const d2=JSON.parse(r);setAppData(d2);await supaSave(token,userId,d2);}}catch(_){}}
+    } catch(e){setAuthError('Error de conexión');}
+    setAuthLoading(false);
+  }
+  async function handleLogout(){
+    if(user?.token)await supaSignOut(user.token);
+    window._supaToken=null;window._supaUserId=null;
+    setUser(null);setAuthEmail('');setAuthPass('');
+  }
+
   // ── RENDER ────────────────────────────────────────────────────────────────────
+  if(!user) return <div style={{minHeight:'100vh',background:'#0A0A0A',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Nunito',sans-serif"}}>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;700;800;900&display=swap" rel="stylesheet"/>
+    <div style={{background:'#111',borderRadius:20,padding:'32px 28px',width:'100%',maxWidth:360,border:'1px solid #1A1A1A'}}>
+      <div style={{textAlign:'center',marginBottom:24}}>
+        <div style={{fontSize:40}}>💸</div>
+        <h1 style={{color:'#39FF14',fontFamily:"'Space Grotesk',sans-serif",fontWeight:900,fontSize:24,margin:0}}>Cash Flow App</h1>
+        <p style={{color:'#555',fontSize:13,margin:'6px 0 0'}}>Controla tu dinero</p>
+      </div>
+      <div style={{display:'flex',background:'#1A1A1A',borderRadius:10,padding:3,marginBottom:20,gap:3}}>
+        {['login','register'].map(t=><button key={t} onClick={()=>{setAuthTab(t);setAuthError('');}} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',cursor:'pointer',fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,background:authTab===t?'#39FF14':'transparent',color:authTab===t?'#000':'#555'}}>{t==='login'?'Ingresar':'Registrarse'}</button>)}
+      </div>
+      <div style={{marginBottom:12}}>
+        <label style={{fontSize:11,fontWeight:800,color:'#666',display:'block',marginBottom:5}}>Email</label>
+        <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="tu@email.com" style={{width:'100%',padding:'10px 13px',borderRadius:10,border:'1px solid #222',background:'#0D0D0D',color:'#F0F0F0',fontSize:14,boxSizing:'border-box',outline:'none'}}/>
+      </div>
+      <div style={{marginBottom:20}}>
+        <label style={{fontSize:11,fontWeight:800,color:'#666',display:'block',marginBottom:5}}>Contraseña</label>
+        <input type="password" value={authPass} onChange={e=>setAuthPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="mínimo 6 caracteres" style={{width:'100%',padding:'10px 13px',borderRadius:10,border:'1px solid #222',background:'#0D0D0D',color:'#F0F0F0',fontSize:14,boxSizing:'border-box',outline:'none'}}/>
+      </div>
+      {authError&&<div style={{background:'#FF444415',borderRadius:8,padding:'8px 12px',color:'#FF4444',fontSize:13,fontWeight:700,marginBottom:12,textAlign:'center'}}>{authError}</div>}
+      <button onClick={handleLogin} disabled={authLoading} style={{width:'100%',padding:13,borderRadius:12,border:'none',background:authLoading?'#39FF1440':'#39FF14',color:'#000',fontFamily:"'Nunito',sans-serif",fontWeight:900,fontSize:15,cursor:'pointer'}}>{authLoading?'Cargando...':(authTab==='login'?'Ingresar':'Crear cuenta')}</button>
+    </div>
+  </div>;
+
   return <>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
     <style>{`
@@ -644,6 +683,7 @@ const [editingAcc,setEditingAcc]=useState(null);
             </div>
             <span style={{fontSize:12,opacity:.4}}>⌄</span>
           </div>
+          <button onClick={handleLogout} title="Cerrar sesión" style={{background:'#1A1A1A',border:'1px solid #333',borderRadius:10,padding:'6px 10px',color:'#666',cursor:'pointer',fontSize:13}}>⏏</button>
         </div>
         <div style={g.mainTabs}>
           <button style={g.mTab(mainTab===0)} onClick={()=>setMainTab(0)}>📊 Dashboard</button>
