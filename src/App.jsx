@@ -654,8 +654,9 @@ const [editingAcc,setEditingAcc]=useState(null);
     try {
       const d = authTab==='register' ? await supaSignUp(authEmail,authPass) : await supaSignIn(authEmail,authPass);
       if(d.error||d.msg){setAuthError(d.error?.message||d.msg||'Error');setAuthLoading(false);return;}
-      // Si es registro y no hay token: email de confirmación enviado
-      if(authTab==='register' && !d.access_token && d.user?.id){
+      // Si es registro: SIEMPRE mostrar pantalla de confirmación
+      // (Supabase envía el email aunque devuelva token)
+      if(authTab==='register' && d.user?.id){
         setAuthLoading(false);
         setAuthError('');
         setAuthTab('confirm');
