@@ -113,9 +113,27 @@ const [editingAcc,setEditingAcc]=useState(null);
 
   // ── Persist ─────────────────────────────────────────────────────────────────
   useEffect(()=>{ async function load(){
-    const cloud = await supaLoad();
-    if(cloud && cloud.accounts){ setAppData(cloud); setLoaded(true); return; }
-    try{ const r=localStorage.getItem("finanzas_v7"); if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; } }catch(_){}
+    // 1. Intentar restaurar sesión guardada
+    try {
+      const sv = localStorage.getItem("cf_session");
+      if(sv){
+        const s = JSON.parse(sv);
+        const rr = await fetch(SUPA_URL+'/auth/v1/user',{
+          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+s.token}
+        });
+        const u = await rr.json();
+        if(u.id){
+          window._supaToken=s.token; window._supaUserId=s.userId;
+          setUser({token:s.token,userId:s.userId,email:s.email});
+          const cloud = await supaLoad(s.token,s.userId);
+          if(cloud&&cloud.accounts) setAppData(cloud);
+          else{try{const lc=localStorage.getItem("finanzas_v7");if(lc)setAppData(JSON.parse(lc));}catch(_){}}
+          setLoaded(true); return;
+        } else localStorage.removeItem("cf_session");
+      }
+    } catch(_){}
+    // 2. Fallback: localStorage
+    try{const r=localStorage.getItem("finanzas_v7");if(r)setAppData(JSON.parse(r));}catch(_){}
     setLoaded(true);
   } load(); },[]);
   useEffect(()=>{ if(!loaded)return; localStorage.setItem("finanzas_v7",JSON.stringify(appData)); },[appData,loaded]);
@@ -963,6 +981,31 @@ const [editingAcc,setEditingAcc]=useState(null);
             {chTab===5&&(()=>{ const bTr=txs.filter(t=>t.type==="transfer"&&inRange(t,bounds)); const wTr=txs.filter(t=>t.type==="wtransfer"&&inRange(t,bounds)); const all=[...bTr,...wTr].sort((a,b)=>new Date(b.datetime)-new Date(a.datetime)); return <div style={g.chCard}><p style={g.chTitle}>Transferencias · {periodLabel()}</p><div style={{display:"flex",gap:8,marginBottom:14}}><div style={{flex:1,background:"#E3F2FD",borderRadius:10,padding:"8px 12px"}}><p style={{fontSize:10,fontWeight:800,color:"#1565C0",margin:0,textTransform:"uppercase",letterSpacing:.5}}>Presupuestos</p><p style={{fontSize:14,fontWeight:900,color:"#1565C0",margin:"4px 0 0"}}>{fCOP(bTr.reduce((s,t)=>s+t.amount,0))}</p></div><div style={{flex:1,background:"#003300",borderRadius:10,padding:"8px 12px"}}><p style={{fontSize:10,fontWeight:800,color:pal.accent,margin:0,textTransform:"uppercase",letterSpacing:.5}}>Billeteras</p><p style={{fontSize:14,fontWeight:900,color:pal.accent,margin:"4px 0 0"}}>{fCOP(wTr.reduce((s,t)=>s+t.amount,0))}</p></div></div>{all.length===0?<p style={{color:pal.text,opacity:.35,fontSize:13,textAlign:"center"}}>Sin transferencias</p>:<div style={g.txList}>{all.map(t=><TxRow key={t.id} t={t} onDel={delTx}/>)}</div>}</div>; })()}
           </div>
         </>}
+
+        {tab===3&&<div style={{padding:"18px 16px"}}>
+          <div style={{background:pal.card,borderRadius:16,padding:20,border:`1px solid ${pal.border}`,marginBottom:12}}>
+            <h3 style={{color:pal.text,fontFamily:pal.headFont,fontWeight:800,fontSize:15,margin:"0 0 20px",display:'flex',alignItems:'center',gap:8}}>⚙️ {tr('config')}</h3>
+
+            <p style={{color:pal.textMuted,fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:1,margin:"0 0 8px"}}>{tr('idioma')}</p>
+            <div style={{display:'flex',gap:8,marginBottom:20}}>
+              {[['es','🇨🇴 Español'],['en','🇺🇸 English']].map(([code,label])=>
+                <button key={code} onClick={()=>setLang(code)} style={{flex:1,padding:'11px 0',borderRadius:12,border:`2px solid ${lang===code?pal.accent:pal.border}`,background:lang===code?pal.accentDim:'transparent',color:lang===code?pal.accent:pal.textMuted,fontFamily:pal.headFont,fontWeight:800,fontSize:13,cursor:'pointer',transition:'all .2s'}}>{label}</button>
+              )}
+            </div>
+
+            <p style={{color:pal.textMuted,fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:1,margin:"0 0 8px"}}>{tr('tema')}</p>
+            <div style={{display:'flex',gap:8,marginBottom:20}}>
+              {[[true,'🌑 '+tr('oscuro')],[false,'☀️ '+tr('claro')]].map(([dm,label])=>
+                <button key={String(dm)} onClick={()=>setDarkMode(dm)} style={{flex:1,padding:'11px 0',borderRadius:12,border:`2px solid ${darkMode===dm?pal.accent:pal.border}`,background:darkMode===dm?pal.accentDim:'transparent',color:darkMode===dm?pal.accent:pal.textMuted,fontFamily:pal.headFont,fontWeight:800,fontSize:13,cursor:'pointer',transition:'all .2s'}}>{label}</button>
+              )}
+            </div>
+
+            <div style={{background:pal.card2,borderRadius:12,padding:'12px 14px',border:`1px solid ${pal.border}`}}>
+              <p style={{color:pal.textMuted,fontSize:12,margin:0,lineHeight:1.5}}>{lang==='es'?'Sesión activa como':'Active session as'}: <strong style={{color:pal.accent}}>{user?.email}</strong></p>
+            </div>
+          </div>
+        </div>}
+
       </>}
     </div>
 
