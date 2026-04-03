@@ -654,8 +654,15 @@ const [editingAcc,setEditingAcc]=useState(null);
     try {
       const d = authTab==='register' ? await supaSignUp(authEmail,authPass) : await supaSignIn(authEmail,authPass);
       if(d.error||d.msg){setAuthError(d.error?.message||d.msg||'Error');setAuthLoading(false);return;}
+      // Si es registro y no hay token: email de confirmación enviado
+      if(authTab==='register' && !d.access_token && d.user?.id){
+        setAuthLoading(false);
+        setAuthError('');
+        setAuthTab('confirm');
+        return;
+      }
       const token=d.access_token, userId=d.user?.id;
-      if(!token){setAuthError('No se pudo obtener sesión');setAuthLoading(false);return;}
+      if(!token){setAuthError('Credenciales incorrectas o email no verificado');setAuthLoading(false);return;}
       window._supaToken=token; window._supaUserId=userId;
       localStorage.setItem("cf_session", JSON.stringify({token,userId,email:authEmail}));
       setUser({token,userId,email:authEmail});
@@ -684,6 +691,13 @@ const [editingAcc,setEditingAcc]=useState(null);
         <h1 style={{color:'#39FF14',fontFamily:"'Space Grotesk',sans-serif",fontWeight:900,fontSize:24,margin:0}}>Cash Flow App</h1>
         <p style={{color:'#555',fontSize:13,margin:'6px 0 0'}}>Controla tu dinero</p>
       </div>
+      {authTab==='confirm' ? <div style={{textAlign:'center',padding:'8px 0',marginBottom:20}}>
+        <div style={{fontSize:48,marginBottom:12}}>📧</div>
+        <h2 style={{color:'#39FF14',fontFamily:"'Space Grotesk',sans-serif",fontWeight:900,fontSize:18,margin:'0 0 10px'}}>¡Revisa tu correo!</h2>
+        <p style={{color:'#888',fontSize:13,lineHeight:1.6,margin:'0 0 16px'}}>Te enviamos un link de verificación a<br/><strong style={{color:'#F0F0F0'}}>{authEmail}</strong></p>
+        <p style={{color:'#555',fontSize:12,marginBottom:20}}>Haz clic en el link y luego ingresa aquí.</p>
+        <button onClick={()=>{setAuthTab('login');setAuthEmail('');setAuthPass('');}} style={{width:'100%',padding:12,borderRadius:12,border:'1px solid #333',background:'transparent',color:'#888',fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:14,cursor:'pointer'}}>Ya verifiqué → Ingresar</button>
+      </div> : <>
       <div style={{display:'flex',background:'#1A1A1A',borderRadius:10,padding:3,marginBottom:20,gap:3}}>
         {['login','register'].map(t=><button key={t} onClick={()=>{setAuthTab(t);setAuthError('');}} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',cursor:'pointer',fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,background:authTab===t?'#39FF14':'transparent',color:authTab===t?'#000':'#555'}}>{t==='login'?'Ingresar':'Registrarse'}</button>)}
       </div>
@@ -697,6 +711,7 @@ const [editingAcc,setEditingAcc]=useState(null);
       </div>
       {authError&&<div style={{background:'#FF444415',borderRadius:8,padding:'8px 12px',color:'#FF4444',fontSize:13,fontWeight:700,marginBottom:12,textAlign:'center'}}>{authError}</div>}
       <button onClick={handleLogin} disabled={authLoading} style={{width:'100%',padding:13,borderRadius:12,border:'none',background:authLoading?'#39FF1440':'#39FF14',color:'#000',fontFamily:"'Nunito',sans-serif",fontWeight:900,fontSize:15,cursor:'pointer'}}>{authLoading?'Cargando...':(authTab==='login'?'Ingresar':'Crear cuenta')}</button>
+      </>}
     </div>
   </div>;
 
