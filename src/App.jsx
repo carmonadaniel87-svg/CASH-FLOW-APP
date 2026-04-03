@@ -76,6 +76,8 @@ export default function App() {
   const [authPass,    setAuthPass]    = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError,   setAuthError]   = useState('');
+  const [lang,     setLang]     = useState(()=>{ try{return localStorage.getItem('cf_lang')||'es';}catch(_){return 'es';} });
+  const [darkMode, setDarkMode] = useState(()=>{ try{return localStorage.getItem('cf_dark')!=='false';}catch(_){return true;} });
 
   const [mainTab,     setMainTab]     = useState(0); // 0=dashboard 1=cuenta activa
   const [tab,         setTab]         = useState(0); // sub-tabs dentro de cuenta
@@ -323,6 +325,14 @@ const [editingAcc,setEditingAcc]=useState(null);
   const dashTotalUSD = dashAllWls.filter(w=>w.currency==="USD").reduce((s,w)=>s+getWalletBal(w.id),0);
 
   // ── EXPORT FUNCTIONS ───────────────────────────────────────────────────────
+  useEffect(()=>{ try{localStorage.setItem('cf_lang',lang);}catch(_){} },[lang]);
+  useEffect(()=>{ try{localStorage.setItem('cf_dark',String(darkMode));}catch(_){} },[darkMode]);
+  const TT = {
+    es:{dashboard:'Dashboard',cuenta:'Cuenta',ingresos:'Ingresos',gastos:'Gastos',billeteras:'Billeteras',presupuestos:'Presupuestos',graficas:'Gráficas',transferir:'Transferir',exportar:'Exportar',config:'Configuración',idioma:'Idioma',tema:'Tema',oscuro:'Oscuro',claro:'Claro',salir:'Cerrar sesión'},
+    en:{dashboard:'Dashboard',cuenta:'Account',ingresos:'Income',gastos:'Expenses',billeteras:'Wallets',presupuestos:'Budgets',graficas:'Charts',transferir:'Transfer',exportar:'Export',config:'Settings',idioma:'Language',tema:'Theme',oscuro:'Dark',claro:'Light',salir:'Sign out'},
+  };
+  const tr = k => TT[lang]?.[k]||TT.es[k]||k;
+
   const [showExport, setShowExport] = useState(false);
   const [exportPeriod, setExportPeriod] = useState("current");
   const [downloadLinks, setDownloadLinks] = useState([]); // "current" | "all"
@@ -426,8 +436,8 @@ const [editingAcc,setEditingAcc]=useState(null);
 
   // ── Palette & styles ──────────────────────────────────────────────────────────
   // Dark neon palette — always the same regardless of account color
-  const pal = {
-    bg:        "#0A0A0A",
+  const pal = darkMode ? {
+    bg:"#0A0A0A",
     card:      "#111111",
     card2:     "#0D0D0D",
     border:    "#1A1A1A",
@@ -442,7 +452,13 @@ const [editingAcc,setEditingAcc]=useState(null);
     textMuted: "#888888",
     textDim:   "#444444",
     monoFont:  "'JetBrains Mono',monospace",
-    headFont:  "'Space Grotesk',sans-serif",
+    headFont:"'Space Grotesk',sans-serif",
+  } : {
+    bg:"#F0F4F0",card:"#FFFFFF",card2:"#F5F5F5",border:"#E0E0E0",border2:"#D0D0D0",
+    accent:"#16A34A",accentDim:"#16A34A18",accentBorder:"#16A34A35",
+    red:"#DC2626",redDim:"#DC262612",redBorder:"#DC262625",
+    text:"#111111",textMuted:"#555555",textDim:"#AAAAAA",
+    monoFont:"'JetBrains Mono',monospace",headFont:"'Space Grotesk',sans-serif",
   };
 
   const g = {
@@ -689,7 +705,7 @@ const [editingAcc,setEditingAcc]=useState(null);
             <span style={{fontSize:12,opacity:.4}}>⌄</span>
           </div>
           <span style={{fontSize:11,color:'#555',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.email?.split('@')[0]}</span>
-          <button onClick={handleLogout} title="Cerrar sesión" style={{background:'#1A1A1A',border:'1px solid #333',borderRadius:10,padding:'6px 10px',color:'#666',cursor:'pointer',fontSize:13}}>⏏</button>
+          <button onClick={handleLogout} style={{background:'#FF444422',border:'1px solid #FF444455',borderRadius:10,padding:'6px 12px',color:'#FF5555',cursor:'pointer',fontSize:12,fontWeight:800,fontFamily:pal.headFont,display:'flex',alignItems:'center',gap:5}}>⏏ {tr('salir')}</button>
         </div>
         <div style={g.mainTabs}>
           <button style={g.mTab(mainTab===0)} onClick={()=>setMainTab(0)}>📊 Dashboard</button>
