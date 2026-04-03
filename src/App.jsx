@@ -1,6 +1,30 @@
 import { useState, useEffect, useRef } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from "recharts";
 
+// ─── SUPABASE ────────────────────────────────────────────────────────────────
+const SUPA_URL = "https://gyypefzjnrgtkgprfglr.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5eXBlZnpqbnJndGtncHJmZ2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzQ5NTcsImV4cCI6MjA5MDc1MDk1N30.U65ZwdEdH6a1JOX7Iib9OskXB3mYqnyzqJQjnuX2RAw";
+async function supaLoad() {
+  try {
+    const r = await fetch(SUPA_URL+'/rest/v1/app_data?id=eq.singleton&select=data', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY }
+    });
+    const rows = await r.json();
+    if(rows?.[0]?.data && rows[0].data.accounts) return rows[0].data;
+  } catch(_) {}
+  return null;
+}
+async function supaSave(data) {
+  try {
+    await fetch(SUPA_URL+'/rest/v1/app_data?id=eq.singleton', {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
+    });
+  } catch(_) {}
+}
+
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const CATS = {
   ingreso: ["💰 Salario","💼 Freelance","🏦 Inversión","🏘️ Arriendo","🎁 Regalo","📈 Rendimiento","🤝 Comisión","💸 Otro"],
@@ -95,43 +119,10 @@ const [editingAcc,setEditingAcc]=useState(null);
   const allWls    = account?.wallets      || []; // all wallets for this account
 
   // ── Persist ─────────────────────────────────────────────────────────────────
-  useEffect(()=>{ function load(){
-    try{
-      // Try current key first
-      const r=localStorage.getItem("finanzas_v7");
-      if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; }
-      // Fallback: try v6
-      r=localStorage.getItem("finanzas_v6");
-      if(r){
-        const old=JSON.parse(r);
-        // Migrate v6 (single account) to v7 (multi-account)
-        if(old.transactions||old.budgets||old.wallets){
-          const migratedAcc={
-            ...DEFAULT_ACCOUNT(),
-            transactions: old.transactions||[],
-            budgets:      old.budgets||[],
-            wallets:      old.wallets||DEFAULT_ACCOUNT().wallets,
-          };
-          setAppData({accounts:[migratedAcc],activeAccountId:migratedAcc.id});
-          setLoaded(true); return;
-        }
-      }
-      // Fallback: try v5
-      r=localStorage.getItem("finanzas_v5");
-      if(r){
-        const old=JSON.parse(r);
-        if(old.personal){
-          const migratedAcc={
-            ...DEFAULT_ACCOUNT(),
-            transactions: old.personal.transactions||[],
-            budgets:      old.personal.budgets||[],
-            wallets:      old.personal.wallets||DEFAULT_ACCOUNT().wallets,
-          };
-          setAppData({accounts:[migratedAcc],activeAccountId:migratedAcc.id});
-          setLoaded(true); return;
-        }
-      }
-    }catch(_){}
+  useEffect(()=>{ async function load(){
+    const cloud = await supaLoad();
+    if(cloud && cloud.accounts){ setAppData(cloud); setLoaded(true); return; }
+    try{ const r=localStorage.getItem("finanzas_v7"); if(r){ setAppData(JSON.parse(r)); setLoaded(true); return; } }catch(_){}
     setLoaded(true);
   } load(); },[]);
   useEffect(()=>{ if(!loaded)return; localStorage.setItem("finanzas_v7",JSON.stringify(appData)); },[appData,loaded]);
