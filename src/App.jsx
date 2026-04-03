@@ -624,6 +624,8 @@ const [editingAcc,setEditingAcc]=useState(null);
       if(!token){setAuthError('No se pudo obtener sesión');setAuthLoading(false);return;}
       window._supaToken=token; window._supaUserId=userId;
       setUser({token,userId,email:authEmail});
+      // Guardar sesión para persistencia
+      try{ localStorage.setItem("cf_session", JSON.stringify({token,userId,email:authEmail})); }catch(_){}
       const cloud=await supaLoad(token,userId);
       if(cloud&&cloud.accounts){setAppData(cloud);}
       else{try{const r=localStorage.getItem("finanzas_v7");if(r){const d2=JSON.parse(r);setAppData(d2);await supaSave(token,userId,d2);}}catch(_){}}
@@ -634,6 +636,7 @@ const [editingAcc,setEditingAcc]=useState(null);
     if(user?.token)await supaSignOut(user.token);
     window._supaToken=null;window._supaUserId=null;
     setUser(null);setAuthEmail('');setAuthPass('');
+    try{ localStorage.removeItem("cf_session"); }catch(_){}
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -683,6 +686,7 @@ const [editingAcc,setEditingAcc]=useState(null);
             </div>
             <span style={{fontSize:12,opacity:.4}}>⌄</span>
           </div>
+          <span style={{fontSize:11,color:'#555',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.email?.split('@')[0]}</span>
           <button onClick={handleLogout} title="Cerrar sesión" style={{background:'#1A1A1A',border:'1px solid #333',borderRadius:10,padding:'6px 10px',color:'#666',cursor:'pointer',fontSize:13}}>⏏</button>
         </div>
         <div style={g.mainTabs}>
