@@ -666,16 +666,18 @@ const [editingAcc,setEditingAcc]=useState(null);
     try {
       const d = authTab==='register' ? await supaSignUp(authEmail,authPass) : await supaSignIn(authEmail,authPass);
       if(d.error||d.msg){setAuthError(d.error?.message||d.msg||'Error');setAuthLoading(false);return;}
-      // Si es registro: SIEMPRE mostrar pantalla de confirmación
-      // (Supabase envía el email aunque devuelva token)
-      if(authTab==='register' && d.user?.id){
+      // Si es registro: mostrar pantalla de confirmación
+      // Supabase puede devolver el user en d.user o directamente en d (con d.id)
+      const registerId = d.user?.id || d.id;
+      const confirmSent = d.confirmation_sent_at || d.user?.confirmation_sent_at;
+      if(authTab==='register' && (registerId || confirmSent)){
         setAuthLoading(false);
         setAuthError('');
         setAuthTab('confirm');
         return;
       }
-      const token=d.access_token, userId=d.user?.id;
-      if(!token){setAuthError('Credenciales incorrectas o email no verificado');setAuthLoading(false);return;}
+      const token=d.access_token, userId=d.user?.id || d.id;
+      if(!token){setAuthError(d.error?.message||'Credenciales incorrectas o email no verificado');setAuthLoading(false);return;}
       window._supaToken=token; window._supaUserId=userId;
       localStorage.setItem("cf_session", JSON.stringify({token,userId,email:authEmail}));
       setUser({token,userId,email:authEmail});
